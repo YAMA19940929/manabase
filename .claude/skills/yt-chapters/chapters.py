@@ -22,8 +22,20 @@ STOP = set("the a an of for to in on and or is are was were be been with this th
            "when where why not no yes do does did just really very like about into over out up down "
            "can could will would should have has had get got make made go going went one two".split())
 
+# Japanese has no spaces between words, so without a tokenizer the content words are taken as runs
+# of kanji or katakana (参勤交代, 大名, ルール ...). Hiragana runs are mostly particles and endings.
+JA_STOP = set("今日 今回 自分 動画 皆さん 本当 最後 最初 場合 感じ 部分 時間 チャンネル".split())
+
 def keywords(text):
-    return {w for w in re.findall(r"[a-z']{4,}", text.lower()) if w not in STOP}
+    en = {w for w in re.findall(r"[a-z']{4,}", text.lower()) if w not in STOP}
+    ja = {w for w in re.findall(r"[㐀-鿿々]{2,}|[ァ-ヺ][ァ-ーー]+", text)
+          if w not in JA_STOP}
+    return en | ja
+
+def make_title(words):
+    if words and all(re.search(r"[぀-ヿ㐀-鿿]", w) for w in words):
+        return "・".join(words)
+    return " ".join(w.capitalize() for w in words)
 
 def mmss(t):
     t = int(t); h, m, s = t // 3600, (t % 3600) // 60, t % 60
@@ -58,8 +70,10 @@ def main():
         end = picked[n + 1] if n + 1 < len(picked) else dur
         text = " ".join(c[2] for c in cues if c[0] >= t and c[1] <= end)
         kw = [w for w in keywords(text)]
-        kw.sort(key=lambda w: -text.lower().count(w))
-        title = " ".join(w.capitalize() for w in kw[:3]) or "Section"
+        # Ties broken by first appearance, so the same transcript always gives the same titles
+        # (set order otherwise changes between runs).
+        kw.sort(key=lambda w: (-text.lower().count(w), text.lower().find(w)))
+        title = make_title(kw[:3]) or "Section"
         chapters.append({"start": round(t, 2), "label": mmss(t), "draft_title": title,
                          "seconds": round(end - t, 2)})
     ok = len(chapters) >= 3 and chapters[0]["start"] == 0 and all(c["seconds"] >= MIN for c in chapters)

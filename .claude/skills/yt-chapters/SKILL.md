@@ -30,6 +30,10 @@ vocabulary shifts across them. The titles it emits are the topic words, and they
 chapter called "Thumbnails Titles Packaging" is a placeholder. Rewrite each one as the promise of
 that section, in the user's voice, three to five words.
 
+Japanese transcripts work too: the draft titles are the kanji and katakana words of the section
+joined with 「・」 (e.g. 「行列・費用・大名」), since there is no tokenizer to find word boundaries.
+Rewrite them the same way.
+
 Chapters are also a retention diagnostic: if a section cannot be named in five words, it is two
 sections or it is filler.
 

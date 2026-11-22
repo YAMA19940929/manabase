@@ -14,8 +14,14 @@ runtime you would land on, and you apply it in whatever editor you use. Nothing 
 """
 import json, os, re, sys
 
-FILLER_ONLY = re.compile(r"^[\s,.-]*((um+|uh+|er+|ah+|so|okay|ok|right|yeah|like|anyway|basically|"
-                         r"actually|you know|i mean|let me see|hold on)[\s,.-]*)+$", re.I)
+PUNCT = r"\s,.\-、。,.!?！?…・「」『』()()〜~ー"
+FILLER_ONLY = re.compile(rf"^[{PUNCT}]*((um+|uh+|er+|ah+|so|okay|ok|right|yeah|like|anyway|basically|"
+                         r"actually|you know|i mean|let me see|hold on|"
+                         # Japanese fillers (えー, えーと, あのー, まぁ, なんか, うーん ...)
+                         r"え[ーっ]*と?|あ[ーっ]+|あの[ーぉ]*|その[ーぉ]*|ま[ぁあー]+|なんか|"
+                         rf"う[ーん]+ん?|ん[ーっ]*|えっと|ええと)[{PUNCT}]*)+$", re.I)
+
+CJK = re.compile(r"[぀-ヿ㐀-鿿々]")
 
 def parse_ts(s):
     s = s.strip().replace(",", ".")
@@ -38,7 +44,12 @@ def load(path):
             cur[2].append(line.strip())
     return [(a, b, " ".join(t)) for a, b, t in cues if t]
 
-def norm(t): return re.sub(r"[^a-z ]", "", t.lower()).split()
+def norm(t):
+    """Opening of a cue, for restart detection: the first 5 words, or for Japanese (no spaces
+    between words) the first 6 characters. Returns (tokens, minimum length to count, joiner)."""
+    if CJK.search(t):
+        return list(re.sub(rf"[{PUNCT}]", "", t))[:6], 4, ""
+    return re.sub(r"[^a-z ]", "", t.lower()).split()[:5], 3, " "
 
 def main():
     a = sys.argv[1:]
@@ -66,10 +77,10 @@ def main():
             j = i - 1
             while j >= 0 and (FILLER_ONLY.match(cues[j][2]) or not cues[j][2].strip()): j -= 1
             if j >= 0:
-                a1, b1 = norm(cues[j][2])[:5], norm(t)[:5]
-                if len(a1) >= 3 and a1 == b1:
+                (a1, need, sep), (b1, _, _) = norm(cues[j][2]), norm(t)
+                if len(a1) >= need and a1 == b1:
                     cuts.append({"kind": "REPEAT", "start": cues[j][0], "end": cues[j][1],
-                                 "why": f'restart of "{" ".join(a1)}"'})
+                                 "why": f'restart of "{sep.join(a1)}"'})
     cuts = [c for c in cuts if c["end"] > c["start"]]
     cuts.sort(key=lambda c: c["start"])
     removed = sum(c["end"] - c["start"] for c in cuts)
