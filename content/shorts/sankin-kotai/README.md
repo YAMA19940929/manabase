@@ -31,7 +31,7 @@
 
 ## 作り直すとき
 
-    docker run -d -p 127.0.0.1:50021:50021 voicevox/voicevox_engine:cpu-latest   # 声(VOICEVOX)
+    bash tools/voice/aivis_up.sh   # 声(AivisSpeech 阿井田 茂)。Docker が必要
     apt-get install -y fonts-noto-cjk ffmpeg
     # VOICEVOX が動いていないときは Open JTalk で読む:
     # apt-get install -y open-jtalk open-jtalk-mecab-naist-jdic hts-voice-nitech-jp-atr503-m001
@@ -40,5 +40,7 @@
 台本を変えるときは `build.py` の `SCRIPT` を直す。1行が `(画面, 字幕, 読み上げ用の文)` で、読み上げ用の文は
 Open JTalk が読み間違えないように一部をかなにしてある。書き方はリポジトリ直下の `CLAUDE.md` に従う。
 
-声は `VOICEVOX_SPEAKER` で変えられる(既定は 11 = 玄野武宏 ノーマル)。VOICEVOX の音声を使うときは、説明欄に
-「VOICEVOX:キャラクター名」のクレジットを入れる。キャラクターごとの利用規約も守る。
+公開中の動画(2026-11-22)の声は VOICEVOX:玄野武宏 なので、説明欄のクレジットはそのまま残す。
+
+これから作り直すときの声は、共通部品 `tools/voice/tts.py` の基本の声(AivisSpeech「阿井田 茂」)になる。
+エンジンは `bash tools/voice/aivis_up.sh` で起動する。AivisSpeech の声はクレジット任意(ACML 1.0)。

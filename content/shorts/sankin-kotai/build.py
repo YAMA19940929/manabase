@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build a 9:16 YouTube Short explaining 参勤交代 for 6th graders.
 
-Each subtitle line is voiced separately with Open JTalk, so every slide lasts exactly as long as
+Each subtitle line is voiced separately (tools/voice/tts.py), so every slide lasts exactly as long as
 its narration. Slides are drawn with Pillow, then ffmpeg joins slides + audio into an MP4.
 """
 import json, math, os, subprocess, sys, wave
@@ -37,31 +37,10 @@ SCRIPT = [
 
 def font(path, size): return ImageFont.truetype(path, size)
 
-# VOICEVOX (https://voicevox.hiroshiba.jp/) gives a far more natural voice than Open JTalk. Run the
-# engine with: docker run -d -p 127.0.0.1:50021:50021 voicevox/voicevox_engine:cpu-latest
-# The description must credit the voice as "VOICEVOX:<character>" (see each character's terms).
-VOICEVOX_URL = os.environ.get("VOICEVOX_URL", "http://127.0.0.1:50021")
-VOICEVOX_SPEAKER = int(os.environ.get("VOICEVOX_SPEAKER", "11"))   # 11 = 玄野武宏 ノーマル
-
-def voicevox(text, path):
-    import urllib.parse, urllib.request
-    q = urllib.parse.urlencode({"text": text, "speaker": VOICEVOX_SPEAKER})
-    with urllib.request.urlopen(urllib.request.Request(f"{VOICEVOX_URL}/audio_query?{q}", method="POST"), timeout=60) as r:
-        query = json.load(r)
-    query.update(speedScale=1.08, intonationScale=1.15, prePhonemeLength=0.05, postPhonemeLength=0.12)
-    req = urllib.request.Request(f"{VOICEVOX_URL}/synthesis?speaker={VOICEVOX_SPEAKER}",
-                                 data=json.dumps(query).encode(), headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=120) as r, open(path, "wb") as f:
-        f.write(r.read())
-
-def tts(text, path):
-    try:
-        voicevox(text, path)
-    except OSError:
-        print("VOICEVOX not reachable - falling back to Open JTalk", file=sys.stderr)
-        subprocess.run(["open_jtalk", "-x", DIC, "-m", VOICE, "-r", "1.35", "-fm", "1.5",
-                        "-ow", path], input=text.encode(), check=True)
-    with wave.open(path) as w: return w.getnframes() / w.getframerate()
+# The narration voice is shared by every Teacher YAMA video: tools/voice/tts.py (AivisSpeech 阿井田 茂,
+# then VOICEVOX, then Open JTalk). Start the engine with: bash tools/voice/aivis_up.sh
+sys.path.insert(0, os.path.join(OUT, "..", "..", "..", "tools", "voice"))
+from tts import synthesize as tts  # noqa: E402
 
 def center(d, xy, text, f, fill, spacing=18):
     d.multiline_text(xy, text, font=f, fill=fill, anchor="mm", align="center", spacing=spacing)
