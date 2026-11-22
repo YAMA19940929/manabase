@@ -14,6 +14,9 @@ import os
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 CLASH = {"brief", "plan", "debug", "simplify"}   # Claude Code の組み込み・既存スキルと同じ名前
+# Teacher YAMA 用に作り込んだスキル(.claude/skills/<名前>/)があるもの。Claude Code 用のコマンドは書き出さない。
+# 貼り付け用の文章には、ふつうの手順のまま残す。
+SKILLS = {"teacher", "factcheck", "critique"}
 
 COMMON = """- 答えは日本語。相手が別の言語で書いたときはその言語。
 - 書き方はリポジトリ直下の `CLAUDE.md` に従う(人が話しているような言葉、決まり文句やAIっぽい言い回しを使わない)。
@@ -150,10 +153,17 @@ def main():
     with open(f"{ROOT}/prompts/claude-commands-40.md", "w", encoding="utf-8") as f:
         f.write(paste_text())
     os.makedirs(f"{ROOT}/.claude/commands", exist_ok=True)
+    written = 0
     for n, what, how in CMDS:
-        with open(f"{ROOT}/.claude/commands/{cc_name(n)}.md", "w", encoding="utf-8") as f:
+        path = f"{ROOT}/.claude/commands/{cc_name(n)}.md"
+        if n in SKILLS:
+            if os.path.exists(path): os.remove(path)
+            continue
+        with open(path, "w", encoding="utf-8") as f:
             f.write(command_file(cc_name(n), what, how))
-    print("wrote prompts/claude-commands-40.md and", len(CMDS), "files in .claude/commands/")
+        written += 1
+    print(f"wrote prompts/claude-commands-40.md and {written} files in .claude/commands/ "
+          f"({', '.join(sorted(SKILLS))} are skills in .claude/skills/)")
 
 if __name__ == "__main__":
     main()
