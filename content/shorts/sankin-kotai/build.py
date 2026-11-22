@@ -19,27 +19,48 @@ PAPER, INK, RED, GOLD, SOFT = (246, 239, 224), (34, 42, 74), (196, 58, 40), (214
 # (scene, subtitle shown on screen, text read aloud). Reading text uses kana where Open JTalk
 # would otherwise misread a word.
 SCRIPT = [
-    ("hook",   "あなたが大名なら\n1年おきに家族と離れて江戸へ", "あなたが大名なら、いちねんおきに家族と離れてえどへ。"),
-    ("hook",   "しかも費用は全部自分もち。\nなぜ従ったの？", "しかも費用は全部自分もち。なぜ従ったの？"),
-    ("name",   "これ、「参勤交代」っていう\n幕府の決まりなんだ", "これ、さんきんこうたいっていう幕府の決まりなんだ。"),
-    ("year",   "決めたのは3代将軍・徳川家光\n1635年のことだよ", "決めたのはさんだい将軍のとくがわいえみつ。せんろっぴゃくさんじゅうごねんのことだよ。"),
-    ("map",    "大名は1年ごとに\n領地と江戸を行ったり来たり", "大名はいちねんごとに、領地とえどを行ったり来たり。"),
-    ("family", "で、奥さんと子どもは\n江戸に住みっぱなし", "で、奥さんと子どもはえどに住みっぱなし。"),
-    ("parade", "行列は何百人。宿代もごはん代も\nぜんぶ大名のお財布から", "行列は何百人。宿代もごはん代も、ぜんぶ大名のおさいふから。"),
-    ("parade", "…正直、これはきつい", "正直、これはきつい。"),
-    ("power",  "でも、幕府のねらいは\nまさにそこ", "でも、幕府のねらいはまさにそこ。"),
-    ("power",  "お金がなくなれば\n戦の準備なんてできないでしょ？", "お金がなくなれば、いくさの準備なんてできないでしょ？"),
-    ("road",   "おもしろいのはここから。\n行列が通ると宿場町がにぎわって", "おもしろいのはここから。行列が通ると宿場町がにぎわって、"),
-    ("road",   "江戸の流行が\n地方まで届いたんだ", "えどの流行が地方まで届いたんだ。"),
-    ("japan",  "大名をしばる決まりが\n日本中をつなぐ道になった", "大名をしばる決まりが、日本中をつなぐ道になった。"),
-    ("japan",  "ちょっと皮肉だよね", "ちょっと皮肉だよね。"),
+    ("hook",   "もしキミが大名だったら\n1年おきに家族を置いて江戸へ", "もしキミが大名だったら。1年おきに、家族を置いて江戸まで行かなきゃいけない。"),
+    ("hook",   "しかも旅のお金はぜんぶ自分持ち\nなんで従ったんだろう？", "しかも旅のお金は、ぜんぶ自分持ち。なんでそんなのに従ったんだろう？"),
+    ("name",   "これが「参勤交代」\n江戸幕府が決めたルールね", "これが、参勤交代。江戸幕府が決めたルールね。"),
+    ("year",   "始めたのは3代将軍・徳川家光\n1635年のこと", "始めたのは、3代将軍の徳川家光。1635年のこと。"),
+    ("map",    "1年は自分の国、次の1年は江戸\nこれをずーっとくり返す", "1年は自分の国、次の1年は江戸。これを、ずーっとくり返す。"),
+    ("family", "で、奥さんと子どもは……\n江戸に住みっぱなし", "で、奥さんと子どもはどうしてたかっていうと、江戸に住みっぱなし。"),
+    ("parade", "行列は何百人。宿もごはん代も\nぜんぶ大名が払う", "行列は何百人。泊まるところも、ごはん代も、ぜんぶ大名が払う。"),
+    ("parade", "いや、正直これはきつい", "いや、正直これはきつい。"),
+    ("power",  "でも幕府からしたら\nそこがねらい", "でも幕府からしたら、そこがねらい。"),
+    ("power",  "お金がなかったら\n戦なんてしてられないでしょ？", "お金がなかったら、いくさなんてしてられないでしょ？"),
+    ("road",   "ただね、話はここで終わらない", "ただね、話はここで終わらない。"),
+    ("road",   "宿場町がにぎわって\n江戸のはやりも地方へ広がった", "行列が通るから、宿場町がにぎわって、江戸のはやりも、地方に広がっていった。"),
+    ("japan",  "大名をしばるはずの決まりが\n日本中をつないでた", "大名をしばるはずの決まりが、気づいたら、日本じゅうをつないでた。"),
+    ("japan",  "……ちょっとおもしろくない？", "ちょっと、おもしろくない？"),
 ]
 
 def font(path, size): return ImageFont.truetype(path, size)
 
+# VOICEVOX (https://voicevox.hiroshiba.jp/) gives a far more natural voice than Open JTalk. Run the
+# engine with: docker run -d -p 127.0.0.1:50021:50021 voicevox/voicevox_engine:cpu-latest
+# The description must credit the voice as "VOICEVOX:<character>" (see each character's terms).
+VOICEVOX_URL = os.environ.get("VOICEVOX_URL", "http://127.0.0.1:50021")
+VOICEVOX_SPEAKER = int(os.environ.get("VOICEVOX_SPEAKER", "11"))   # 11 = 玄野武宏 ノーマル
+
+def voicevox(text, path):
+    import urllib.parse, urllib.request
+    q = urllib.parse.urlencode({"text": text, "speaker": VOICEVOX_SPEAKER})
+    with urllib.request.urlopen(urllib.request.Request(f"{VOICEVOX_URL}/audio_query?{q}", method="POST"), timeout=60) as r:
+        query = json.load(r)
+    query.update(speedScale=1.08, intonationScale=1.15, prePhonemeLength=0.05, postPhonemeLength=0.12)
+    req = urllib.request.Request(f"{VOICEVOX_URL}/synthesis?speaker={VOICEVOX_SPEAKER}",
+                                 data=json.dumps(query).encode(), headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=120) as r, open(path, "wb") as f:
+        f.write(r.read())
+
 def tts(text, path):
-    subprocess.run(["open_jtalk", "-x", DIC, "-m", VOICE, "-r", "1.35", "-fm", "1.5",
-                    "-ow", path], input=text.encode(), check=True)
+    try:
+        voicevox(text, path)
+    except OSError:
+        print("VOICEVOX not reachable - falling back to Open JTalk", file=sys.stderr)
+        subprocess.run(["open_jtalk", "-x", DIC, "-m", VOICE, "-r", "1.35", "-fm", "1.5",
+                        "-ow", path], input=text.encode(), check=True)
     with wave.open(path) as w: return w.getnframes() / w.getframerate()
 
 def center(d, xy, text, f, fill, spacing=18):
@@ -124,7 +145,7 @@ def slide(scene, sub, idx, total, path):
     d = ImageDraw.Draw(im)
     d.rectangle([0, 0, W, 250], fill=INK)
     center(d, (W // 2, 105), "参勤交代ってなに？", font(BOLD, 78), PAPER)
-    center(d, (W // 2, 195), "小6社会 45秒でわかる", font(REG, 40), GOLD)
+    center(d, (W // 2, 195), "小6社会", font(REG, 40), GOLD)
     art(d, scene)
     d.rounded_rectangle([60, 1110, W - 60, 1420], radius=36, fill=(255, 255, 255), outline=INK, width=6)
     center(d, (W // 2, 1265), sub, font(BOLD, 58), INK, 22)
